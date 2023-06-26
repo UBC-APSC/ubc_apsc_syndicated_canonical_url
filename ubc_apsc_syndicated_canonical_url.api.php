@@ -16,6 +16,7 @@
  * Implement and invoke hooks HOOK_page_attachments_alter(array &$page) as ubc_apsc_syndicated_canonical_url_page_attachments_alter(array &$page)
  * Replaces the canonical URL metatag of the local domain name with the one defined in the module's configuration
  * Configuration allows to enter the source domain and select which content types to activate the functionality on.
+ * Note: this creates a Drupal config file to store the settings.
  */
 
 function ubc_apsc_syndicated_canonical_url_page_attachments_alter(array &$page) {
