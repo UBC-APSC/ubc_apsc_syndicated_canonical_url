@@ -1,0 +1,7 @@
+ubc_apsc_syndicated_canonical_url.form:
+  path: '/admin/config/search/ubc_apsc_syndicated_canonical_url'
+  defaults:
+    _form: '\Drupal\ubc_apsc_syndicated_canonical_url\Form\UbcApscSyndicatedCanonicalUrlForm'
+    _title: 'Syndicated canonical url settings'
+  requirements:
+    _permission: 'administer site configuration'

@@ -1,0 +1,5 @@
+ubc_apsc_syndicated_canonical_url.form:
+  title: 'Syndicated canonical url settings'
+  description: 'Configure settings for the ubc_apsc_syndicated_canonical_url module.'
+  route_name: ubc_apsc_syndicated_canonical_url.form
+  parent: 'system.admin_config_search'

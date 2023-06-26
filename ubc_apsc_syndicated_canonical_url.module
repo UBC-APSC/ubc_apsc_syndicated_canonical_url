@@ -1,0 +1,91 @@
+<?php
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function ubc_apsc_syndicated_canonical_url_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.ubc_apsc_syndicated_canonical_url':
+      return t('
+        <h2>Syndicated content canonical URL</h2>
+        <p>The module replaces the local canonical metatag domain with that of origin domain for syndicated content</p>
+        <p>Specify origin domain and which content types should be targeted in the settings page</p>
+        <p>Then, visit <strong>/admin/config/search/ubc_apsc_syndicated_canonical_url</strong> and enter the syndicated content source, and select which content types on which to activate the functionality.</p>');
+  }
+}
+
+/**
+ * @file
+ * Implement and invoke hooks HOOK_page_attachments_alter(array &$page)
+ * Updates canonical link metatag to point to source site if article is syndicated
+ */
+
+function ubc_apsc_syndicated_canonical_url_page_attachments_alter(array &$page) {
+	
+	// check not an admin page
+	$route_match = \Drupal::routeMatch();
+	
+	if ($route_match->getRouteName() == 'entity.node.canonical') {
+		
+		// get module config settings
+		$config = \Drupal::config('ubc_apsc_syndicated_canonical_url.settings');
+		$canonical_domain = $config->get('ubc_apsc_syndicated_canonical_url.origin_domain');
+		
+		// check the origin domain set
+		if(!empty($canonical_domain)) {
+			
+			// get current node type, list configured syndicated content types
+			$node = \Drupal::routeMatch()->getParameter('node');
+			$content_type = $node->getType();
+			$syndicated_types = array_values($config->get('ubc_apsc_syndicated_canonical_url.content_types') ?: []);
+			
+			// check node is part of syndicated content types and node has been syndicated
+			if(in_array($content_type, $syndicated_types, true) && $node->field_syndicate_to_eng->value) {				
+				//replace local domain with syndicated origin
+				foreach($page['#attached']['html_head'] as $key => $metatag)
+					if(in_array('canonical_url', $metatag, true)) {
+						$local_canonical = parse_url($page['#attached']['html_head'][$key][0]['#attributes']['href']);
+						$page['#attached']['html_head'][$key][0]['#attributes']['href'] = "$local_canonical[scheme]://$canonical_domain$local_canonical[path]" . (isset($local_canonical["query"]) ? "?$local_canonical[query]" : "");
+					}
+				
+			}
+		}
+	}
+}
+
+/**
+ * @file
+ * Implement and invoke hooks HOOK_preprocess_node(&$variables)
+ * Provide variable in templates for syndication source
+ */
+function ubc_apsc_syndicated_canonical_url_preprocess_node(&$variables) {
+	
+	// get module config settings
+	$config = \Drupal::config('ubc_apsc_syndicated_canonical_url.settings');
+	
+	$variables['local_news_source_label'] = $config->get('ubc_apsc_syndicated_canonical_url.local_label');
+	
+	// check not an admin page
+	$route_match = \Drupal::routeMatch();
+
+	if ($route_match->getRouteName() == 'entity.node.canonical') {
+		
+		$canonical_domain = $config->get('ubc_apsc_syndicated_canonical_url.origin_domain');
+		
+		// check the origin domain set
+		if(!empty($canonical_domain)) {
+			
+			// get current node type, list configured syndicated content types
+			$node = \Drupal::routeMatch()->getParameter('node');
+			$content_type = $variables['node']->getType();
+			$syndicated_types = array_values($config->get('ubc_apsc_syndicated_canonical_url.content_types') ?: []);
+			
+			// check node is part of syndicated content types and node has been syndicated, make label available as variable for templates
+			if(in_array($content_type, $syndicated_types, true) && $variables['node']->field_syndicate_to_eng->value) {
+				$variables['syndicated_news_source_label'] = $config->get('ubc_apsc_syndicated_canonical_url.origin_label');
+			}
+		}
+	}
+}

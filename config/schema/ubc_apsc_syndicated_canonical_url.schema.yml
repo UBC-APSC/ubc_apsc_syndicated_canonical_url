@@ -1,0 +1,19 @@
+ubc_apsc_syndicated_canonical_url.settings:
+  type: config_object
+  label: 'Syndicated canonical url settings'
+  mapping:
+    ubc_apsc_syndicated_canonical_url:
+      type: mapping
+      mapping:
+        local_label:
+          type: text
+          label: 'The label of the local domain:'
+        origin_label:
+          type: text
+          label: 'The label of the source domain:'
+        origin_domain:
+          type: text
+          label: 'The source domain for the syndicated content:'
+        content_types:
+          type: checkbox
+          label: 'Activate for the following content types'

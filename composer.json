@@ -1,0 +1,19 @@
+{
+    "name": "apsc-web/ubc_apsc_syndicated_canonical_url",
+    "description": "Alter the canonical URL with origin domain name, label for content that has been syndicated.",
+    "type": "drupal-module",
+    "require": {
+    },
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "apsc-web",
+            "email": "web@apsc.ubc.ca",
+            "homepage": "https://apsc.ubc.ca"
+        }
+    ],
+    "minimum-stability": "stable",
+    "support": {
+		"issues": "https://apsc.ubc.ca/web"
+	}
+}
