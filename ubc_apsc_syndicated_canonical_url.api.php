@@ -47,3 +47,38 @@ function ubc_apsc_syndicated_canonical_url_page_attachments_alter(array &$page) 
 		}
 	}
 }
+
+/**
+ * @file
+ * Implement and invoke hooks HOOK_preprocess_node(&$variables)
+ * Provide variable defined in the module's configuration in templates for syndication source label
+ */
+function ubc_apsc_syndicated_canonical_url_preprocess_node(&$variables) {
+	
+	// get module config settings
+	$config = \Drupal::config('ubc_apsc_syndicated_canonical_url.settings');
+	
+	$variables['local_news_source_label'] = $config->get('ubc_apsc_syndicated_canonical_url.local_label');
+	
+	// check not an admin page
+	$route_match = \Drupal::routeMatch();
+
+	if ($route_match->getRouteName() == 'entity.node.canonical') {
+		
+		$canonical_domain = $config->get('ubc_apsc_syndicated_canonical_url.origin_domain');
+		
+		// check the origin domain set
+		if(!empty($canonical_domain)) {
+			
+			// get current node type, list configured syndicated content types
+			$node = \Drupal::routeMatch()->getParameter('node');
+			$content_type = $variables['node']->getType();
+			$syndicated_types = array_values($config->get('ubc_apsc_syndicated_canonical_url.content_types') ?: []);
+			
+			// check node is part of syndicated content types and node has been syndicated, make label available as variable for templates
+			if(in_array($content_type, $syndicated_types, true) && $variables['node']->field_syndicate_to_eng->value) {
+				$variables['syndicated_news_source_label'] = $config->get('ubc_apsc_syndicated_canonical_url.origin_label');
+			}
+		}
+	}
+}
