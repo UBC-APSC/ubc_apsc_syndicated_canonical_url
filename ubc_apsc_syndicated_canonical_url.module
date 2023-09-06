@@ -89,3 +89,17 @@ function ubc_apsc_syndicated_canonical_url_preprocess_node(&$variables) {
 		}
 	}
 }
+
+/**
+ * Implements hook_update_projects_alter(&$projects).
+ * Alter the list of projects before fetching data and comparing versions.
+ *
+ * Hide projects from the list to avoid "No available releases found" warnings on the available updates report
+ *
+ * @see \Drupal\update\UpdateManager::getProjects()
+ * @see \Drupal\Core\Utility\ProjectInfo::processInfoList()
+ */
+function ubc_apsc_syndicated_canonical_url_update_projects_alter(&$projects) {
+  // Hide a site-specific module from the list.
+  unset($projects['ubc_apsc_syndicated_canonical_url']);
+}
