@@ -2,20 +2,30 @@
 
 namespace Drupal\ubc_apsc_syndicated_canonical_url\Form;
 
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\State\StateInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class UbcApscSyndicatedCanonicalUrlForm extends ConfigFormBase {
+
+  protected $state;
 
   /**
    * The entity field manager.
    *
-   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
-  protected $entityFieldManager;
+  protected $entityTypeManager;
+
+   /**
+   * The module handler service.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
 
   /**
    * Constructs an AutoParagraphForm object.
@@ -23,8 +33,10 @@ class UbcApscSyndicatedCanonicalUrlForm extends ConfigFormBase {
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The entityTypeManager.
    */
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, StateInterface $state) {
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, StateInterface $state, ModuleHandlerInterface $moduleHandler) {
     $this->entityTypeManager = $entityTypeManager;
+    $this->state = $state;
+    $this->moduleHandler = $moduleHandler;
   }
 
   /**
@@ -33,7 +45,7 @@ class UbcApscSyndicatedCanonicalUrlForm extends ConfigFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('entity_type.manager'),$container
-      ->get('state')
+      ->get('state'),$container->get('module_handler')
     );
   }
   
@@ -101,6 +113,16 @@ class UbcApscSyndicatedCanonicalUrlForm extends ConfigFormBase {
       '#default_value' => $config->get('ubc_apsc_syndicated_canonical_url.content_types', []) ?: [],
     ];
 
+    // Re-write meta data canonical link for origin site.
+    $form['sitemap_exclusion'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Exclude syndicated content from the sitemap'),
+      '#default_value' => $this->moduleHandler->moduleExists('simple_sitemap') ? $config->get('ubc_apsc_syndicated_canonical_url.sitemap_exclusion') : FALSE,
+      '#description' => $this->t(($this->moduleHandler->moduleExists('simple_sitemap') ? '' : 'This functionality requires the simple_sitemap module.<br />') . 'Check this box to exclude the syndicated content from the sitemap.This is recommended to avoid canonical URL SEO issues.<br />Note: changing this value this will trigger a rebuild of the sitemap on the next cron run.'),
+      '#disabled' => $this->moduleHandler->moduleExists('simple_sitemap') ? FALSE : TRUE,
+      '#access' => $this->moduleHandler->moduleExists('simple_sitemap') ? TRUE : FALSE,
+    ];
+
     return $form;
   }
   
@@ -109,6 +131,7 @@ class UbcApscSyndicatedCanonicalUrlForm extends ConfigFormBase {
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
 
+    return parent::validateForm($form, $form_state);
   }
   
     /**
@@ -122,8 +145,16 @@ class UbcApscSyndicatedCanonicalUrlForm extends ConfigFormBase {
     $config->set('ubc_apsc_syndicated_canonical_url.origin_label', $form_state->getValue('origin_label'));
     $config->set('ubc_apsc_syndicated_canonical_url.origin_domain', $form_state->getValue('origin_domain'));
     $config->set('ubc_apsc_syndicated_canonical_url.content_types', $form_state->getValue('content_types'));
+    $config->set('ubc_apsc_syndicated_canonical_url.sitemap_exclusion', ($this->moduleHandler->moduleExists('simple_sitemap') ? $form_state->getValue('sitemap_exclusion') : FALSE));
 	
     $config->save();
+
+    if ($this->moduleHandler->moduleExists('simple_sitemap') && ( $config->get('ubc_apsc_syndicated_canonical_url.sitemap_exclusion') !== $form_state->getValue('sitemap_exclusion') )) {
+      // Queue all elements for sitemap generation when this setting has changed.
+      /** @var \Drupal\simple_sitemap\Manager\Generator $sitemap_generator */
+      $sitemap_generator = \Drupal::service('simple_sitemap.generator');
+      $sitemap_generator->rebuildQueue();
+    }
 	
     return parent::submitForm($form, $form_state);
   }

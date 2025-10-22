@@ -82,3 +82,44 @@ function ubc_apsc_syndicated_canonical_url_preprocess_node(&$variables) {
 		}
 	}
 }
+
+/**
+* Implements hook_simple_sitemap_links_alter().
+*
+* Remove the sitemap URLs for syndicated content, before they are transformed to XML.
+*/
+function ubc_apsc_syndicated_canonical_url_simple_sitemap_links_alter(array &$links, $sitemap) {
+
+	// get module config settings
+	$config = \Drupal::config('ubc_apsc_syndicated_canonical_url.settings');
+	$sitemap_exclusion = $config->get('ubc_apsc_syndicated_canonical_url.sitemap_exclusion');
+	$syndicated_types = array_values($config->get('ubc_apsc_syndicated_canonical_url.content_types') ?: []);
+
+	// check the origin domain set
+	if($sitemap_exclusion) {
+
+		foreach ($links as $key => &$link) {
+
+			// Remove the URL from the sitemap for a content types with nodes marked for syndication.
+			if (in_array($link['meta']['entity_info']['bundle'], $syndicated_types, true) && $link['meta']['entity_info']['entity_type'] === 'node' && isset($link['meta']['entity_info']['id'])) {
+				$node = \Drupal\node\Entity\Node::load($link['meta']['entity_info']['id']);
+				if ($node->field_syndicate_to_eng->value)
+					unset($links[$key]);
+			}
+		}
+	}
+}
+
+/**
+ * Implements hook_update_projects_alter(&$projects).
+ * Alter the list of projects before fetching data and comparing versions.
+ *
+ * Hide projects from the list to avoid "No available releases found" warnings on the available updates report
+ *
+ * @see \Drupal\update\UpdateManager::getProjects()
+ * @see \Drupal\Core\Utility\ProjectInfo::processInfoList()
+ */
+function ubc_apsc_syndicated_canonical_url_update_projects_alter(&$projects) {
+  // Hide a site-specific module from the list.
+  unset($projects['ubc_apsc_syndicated_canonical_url']);
+}
