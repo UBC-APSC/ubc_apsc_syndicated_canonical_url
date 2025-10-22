@@ -3,3 +3,4 @@ ubc_apsc_syndicated_canonical_url:
   origin_label: ''
   origin_domain: ''
   content_types: 
+  sitemap_exclusion: true
