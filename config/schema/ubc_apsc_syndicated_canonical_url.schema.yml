@@ -17,3 +17,6 @@ ubc_apsc_syndicated_canonical_url.settings:
         content_types:
           type: checkbox
           label: 'Activate for the following content types'
+        sitemap_exclusion:
+          type: boolean
+          label: 'Exclude URLs from the sitemap, for nodes that have been syndicated'

@@ -82,3 +82,97 @@ function ubc_apsc_syndicated_canonical_url_preprocess_node(&$variables) {
 		}
 	}
 }
+
+/**
+* Implements hook_simple_sitemap_links_alter().
+*
+* Remove the sitemap URLs for syndicated content, before they are transformed to XML.
+*/
+function ubc_apsc_syndicated_canonical_url_simple_sitemap_links_alter(array &$links, $sitemap) {
+
+	// get module config settings
+	$config = \Drupal::config('ubc_apsc_syndicated_canonical_url.settings');
+	$sitemap_exclusion = $config->get('ubc_apsc_syndicated_canonical_url.sitemap_exclusion');
+	$syndicated_types = array_values($config->get('ubc_apsc_syndicated_canonical_url.content_types') ?: []);
+
+	// check the origin domain set
+	if($sitemap_exclusion) {
+
+		foreach ($links as $key => &$link) {
+
+			// Remove the URL from the sitemap for a content types with nodes marked for syndication.
+			if (in_array($link['meta']['entity_info']['bundle'], $syndicated_types, true) && $link['meta']['entity_info']['entity_type'] === 'node' && isset($link['meta']['entity_info']['id'])) {
+				$node = \Drupal\node\Entity\Node::load($link['meta']['entity_info']['id']);
+				if ($node->field_syndicate_to_eng->value)
+					unset($links[$key]);
+			}
+		}
+	}
+}
+
+/**
+ * Implements hook_form_alter().
+ * Alters node edit forms to disable simple_sitemap field when content is marked for syndication.
+ */
+function ubc_apsc_syndicated_canonical_url_form_node_form_alter(&$form, FormStateInterface $form_state, $form_id)
+{
+	// Get syndicated content types that have a canonical URL to the original site.
+	$config = \Drupal::config('ubc_apsc_syndicated_canonical_url.settings');
+	$syndicated_content_types = $config->get('ubc_apsc_syndicated_canonical_url.content_types');
+	$edit_form = substr($form_id, 5, -10);
+
+	// Target node edit forms that are part of syndicated content types.
+	if (is_array($syndicated_content_types) && in_array($edit_form, $syndicated_content_types)) {
+
+		// Disable the simple_sitemap field if 'field_syndicate_to_eng' is checked.
+		if (isset($form['field_syndicate_to_eng'])) {
+			$form['simple_sitemap']['#states'] = [
+				'disabled' => [
+					':input[name="field_syndicate_to_eng[value]"]' => ['checked' => TRUE],
+				],
+			];
+
+			// Use #states to update the correct radio based on field_syndicate_to_eng.
+			if (isset($form['simple_sitemap']['default']['index'])) {
+				$form['simple_sitemap']['default']['index'][0]['#states'] = [
+					'checked' => [
+						':input[name="field_syndicate_to_eng[value]"]' => ['checked' => TRUE],
+					],
+				];
+				$form['simple_sitemap']['default']['index'][1]['#states'] = [
+					'checked' => [
+						':input[name="field_syndicate_to_eng[value]"]' => ['checked' => FALSE],
+					],
+				];
+			}
+
+			// Include a note for users to understand that syndicated content will not be included in the sitemap.
+			$form['simple_sitemap']['syndicated_note_container'] = [
+				'#type' => 'container',
+				'#states' => [
+					'visible' => [
+						':input[name="field_syndicate_to_eng[value]"]' => ['checked' => TRUE],
+					],
+				],
+			];
+			$form['simple_sitemap']['syndicated_note_container']['syndicated_note'] = [
+				'#type' => 'markup',
+				'#markup' => t('Note: Syndicated content will not be included in sitemaps.'),
+			];
+		}
+	}
+}
+
+/**
+ * Implements hook_update_projects_alter(&$projects).
+ * Alter the list of projects before fetching data and comparing versions.
+ *
+ * Hide projects from the list to avoid "No available releases found" warnings on the available updates report
+ *
+ * @see \Drupal\update\UpdateManager::getProjects()
+ * @see \Drupal\Core\Utility\ProjectInfo::processInfoList()
+ */
+function ubc_apsc_syndicated_canonical_url_update_projects_alter(&$projects) {
+  // Hide a site-specific module from the list.
+  unset($projects['ubc_apsc_syndicated_canonical_url']);
+}

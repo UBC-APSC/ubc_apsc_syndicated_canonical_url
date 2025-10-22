@@ -1,11 +1,12 @@
 name: UBC APSC syndicated canonical URL
 type: module
-description: Alter the canonical URL with origin domain name, label for content that has been syndicated.
-package: UBC APSC
-core_version_requirement: ^9 || ^10 || ^11
+description: Alter the canonical URL with origin domain name, provide a label for content that has been syndicated, exclude the syndicated content from the sitemap.
 configure: ubc_apsc_syndicated_canonical_url.form
+package: 'UBC APSC'
+
+core_version_requirement: ^10 || ^11
 
 # Information added by Drupal.org packaging script on 2020-11-18
-version: '1.3'
+version: '1.6'
 project: 'ubc_apsc_syndicated_canonical_url'
-datestamp: 1760658979
+datestamp: 1761258303
