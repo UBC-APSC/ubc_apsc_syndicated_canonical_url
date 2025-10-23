@@ -7,6 +7,6 @@ package: 'UBC APSC'
 core_version_requirement: ^10 || ^11
 
 # Information added by Drupal.org packaging script on 2020-11-18
-version: '1.4'
+version: '1.6'
 project: 'ubc_apsc_syndicated_canonical_url'
-datestamp: 1761151128
+datestamp: 1761258303
